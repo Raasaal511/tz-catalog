@@ -224,12 +224,23 @@ API_BASE_URL=http://localhost:8000 npm run dev
 - `POST /api/v1/products` — создание (`multipart`: `title`, `image`, опционально `created_by`), заголовок `X-API-Key`
 - `GET /api/v1/media/{object_key}` — отдача изображения
 
-## Форма сдачи
+## Форма сдачи (черновик)
 
-- Репозиторий: ссылка на этот GitHub/GitLab
-- Бот: `@your_bot` после деплоя токена
-- Стенд: URL `catalog-web` на Render
-- Код доступа: `INV-H2Y9B`
+- **Репозиторий:** https://github.com/Raasaal511/tz-catalog
+- **Бот:** после создания у BotFather и деплоя `catalog-bot`
+- **Стенд:** URL `catalog-web` на Render
+- **Код доступа:** `INV-H2Y9B`
+
+### Комментарий к сдаче (можно вставить в форму)
+
+```text
+Архитектура: Bot (aiogram 3, webhook) → FastAPI → PostgreSQL + MinIO(S3).
+Каталог: Next.js App Router (SSR) + Telegram Mini App SDK.
+Отказоустойчивость: все сервисы stateless; общее состояние только в Postgres/MinIO;
+бот без MemoryStorage/FSM (создание товара атомарно photo+caption); в prod webhook.
+Локальный запуск: cp .env.example .env && make up
+Render: Blueprint render.yaml, затем проставить BOT_TOKEN / WEBAPP_URL / PUBLIC_BASE_URL.
+```
 
 ## Лицензия
 
