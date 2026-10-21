@@ -5,7 +5,7 @@ from aiogram import Bot, F, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from app.keyboards import catalog_keyboard
+from app.keyboards import catalog_hint_text, catalog_keyboard
 from app.services.catalog_api import catalog_api
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,10 @@ async def cmd_create(message: Message, is_admin: bool) -> None:
 async def create_product_from_photo(message: Message, bot: Bot, is_admin: bool) -> None:
     if not is_admin:
         # Regular users still get the catalog CTA on any photo
-        await message.answer("У меня есть товар", reply_markup=catalog_keyboard())
+        await message.answer(
+            "У меня есть товар" + catalog_hint_text(),
+            reply_markup=catalog_keyboard(),
+        )
         return
 
     title = (message.caption or "").strip()
@@ -71,6 +74,7 @@ async def create_product_from_photo(message: Message, bot: Bot, is_admin: bool) 
         return
 
     await status.edit_text(
-        f"Товар создан: «{product.get('title')}» (id={product.get('id')}).",
+        f"Товар создан: «{product.get('title')}» (id={product.get('id')})."
+        + catalog_hint_text(),
         reply_markup=catalog_keyboard(),
     )

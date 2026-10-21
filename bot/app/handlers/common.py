@@ -2,7 +2,7 @@ from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, Message
 
-from app.keyboards import admin_help_keyboard, catalog_keyboard
+from app.keyboards import admin_help_keyboard, catalog_hint_text, catalog_keyboard
 
 router = Router(name="common")
 
@@ -11,7 +11,7 @@ router = Router(name="common")
 @router.message(Command("help"))
 @router.message(Command("catalog"))
 async def cmd_start(message: Message, is_admin: bool) -> None:
-    text = "У меня есть товар"
+    text = "У меня есть товар" + catalog_hint_text()
     if is_admin:
         text += (
             "\n\nВы администратор.\n"
