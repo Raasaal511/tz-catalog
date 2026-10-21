@@ -1,0 +1,127 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# Deploy: connect this repo in Render Dashboard → New → Blueprint
+#
+# After first deploy, set secrets in the dashboard (BOT_TOKEN, ADMIN_TELEGRAM_IDS, etc.)
+# and update WEBAPP_URL / PUBLIC_BASE_URL / WEBHOOK_HOST / CORS_ORIGINS to your service URLs.
+
+databases:
+  - name: catalog-db
+    plan: free
+
+services:
+  - type: web
+    name: catalog-minio
+    runtime: image
+    image:
+      url: docker.io/pgsty/minio:latest
+    # Render injects $PORT — MinIO must listen on it
+    dockerCommand: server /data --address :$PORT --console-address :9001
+    plan: starter
+    disk:
+      name: catalog-minio-data
+      mountPath: /data
+      sizeGB: 5
+    envVars:
+      - key: MINIO_ROOT_USER
+        generateValue: true
+      - key: MINIO_ROOT_PASSWORD
+        generateValue: true
+    healthCheckPath: /minio/health/live
+
+  - type: web
+    name: catalog-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: catalog-db
+          property: connectionString
+      - key: INTERNAL_API_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: S3_ENDPOINT_URL
+        fromService:
+          name: catalog-minio
+          type: web
+          property: host
+      - key: S3_ACCESS_KEY
+        fromService:
+          name: catalog-minio
+          type: web
+          envVarKey: MINIO_ROOT_USER
+      - key: S3_SECRET_KEY
+        fromService:
+          name: catalog-minio
+          type: web
+          envVarKey: MINIO_ROOT_PASSWORD
+      - key: S3_BUCKET
+        value: products
+
+  - type: web
+    name: catalog-bot
+    runtime: docker
+    dockerfilePath: ./bot/Dockerfile
+    dockerContext: ./bot
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: BOT_MODE
+        value: webhook
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_TELEGRAM_IDS
+        sync: false
+      - key: WEBAPP_URL
+        sync: false
+      - key: WEBHOOK_HOST
+        sync: false
+      - key: WEBHOOK_PATH
+        value: /telegram/webhook
+      - key: WEBHOOK_SECRET
+        generateValue: true
+      - key: BOT_LISTEN_HOST
+        value: 0.0.0.0
+      - key: BOT_LISTEN_PORT
+        value: "10000"
+      - key: PORT
+        value: "10000"
+      - key: API_BASE_URL
+        fromService:
+          name: catalog-api
+          type: web
+          property: host
+      - key: INTERNAL_API_KEY
+        fromService:
+          name: catalog-api
+          type: web
+          envVarKey: INTERNAL_API_KEY
+
+  - type: web
+    name: catalog-web
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: API_BASE_URL
+        fromService:
+          name: catalog-api
+          type: web
+          property: host
+      - key: NEXT_PUBLIC_API_BASE_URL
+        fromService:
+          name: catalog-api
+          type: web
+          property: host
+      - key: PORT
+        value: "3000"
