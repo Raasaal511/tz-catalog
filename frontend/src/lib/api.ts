@@ -20,18 +20,25 @@ function ensureScheme(url: string): string {
   return `https://${url}`;
 }
 
-function getApiBaseUrl(): string {
+/** Browser / client: only NEXT_PUBLIC_* is available. */
+export function getPublicApiBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  return ensureScheme(raw).replace(/\/$/, "");
+}
+
+/** Server: prefer internal Docker URL, fall back to public. */
+export function getServerApiBaseUrl(): string {
   const raw =
     process.env.API_BASE_URL ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
     "http://localhost:8000";
-  return ensureScheme(raw);
+  return ensureScheme(raw).replace(/\/$/, "");
 }
 
-export async function fetchProducts(): Promise<ProductList> {
-  const base = getApiBaseUrl().replace(/\/$/, "");
+export async function fetchProducts(baseUrl?: string): Promise<ProductList> {
+  const base = (baseUrl || getServerApiBaseUrl()).replace(/\/$/, "");
   const response = await fetch(`${base}/api/v1/products`, {
-    next: { revalidate: 10 },
+    cache: "no-store",
   });
 
   if (!response.ok) {
